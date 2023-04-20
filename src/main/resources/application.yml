@@ -1,0 +1,44 @@
+server:
+  address: "localhost"
+  port: 8080
+  error:
+    include-message: always
+    include-binding-errors: always
+
+logging:
+  level:
+    root: INFO
+    com:
+      velocity.lab: DEBUG
+
+
+spring:
+  profiles:
+    active:
+      - default
+
+
+  # Spring DATASOURCE (DataSourceAutoConfiguration & DataSourceProperties)
+  datasource:
+    url: jdbc:postgresql://localhost:5432/lambda-grp2?reWriteBatchedInserts=true
+    username: grp2
+    password: grp2
+
+  jpa:
+    properties:
+      hibernate:
+        generate_statistics: false
+        order_inserts: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 100
+    show-sql: false
+    open-in-view: false
+    hibernate:
+      # Hibernate ddl auto (create, create-drop, validate, update)
+      ddl-auto: update
+
+  sql:
+    init:
+      continue-on-error: true
+      mode: always
