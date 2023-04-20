@@ -59,7 +59,7 @@ public class FileHandler {
         final List<Word> words = new ArrayList<>();
         for (WordFrequency wf : wordFrequencies) {
             WordId id = WordId.builder().fileName(fileName).word(wf.getWord()).build();
-            words.add(Word.builder().tf(wf.getFrequency()).wordId(id).build());
+            words.add(Word.builder().tf(wf.getFrequency()).df(1).wordId(id).build());
         }
         this.wordRepository.saveAll(words);
 
