@@ -6,9 +6,12 @@ services:
     build:
       context: .
     container_name: lambdaGrp2
+    ports:
+      - "8080:8080"
     depends_on:
       - db
     environment:
+      - SERVER_ADDRESS=0.0.0.0
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/lambda-grp2?reWriteBatchedInserts=true
       - SPRING_DATASOURCE_USERNAME=grp2
       - SPRING_DATASOURCE_PASSWORD=grp2
