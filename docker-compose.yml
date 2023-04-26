@@ -3,22 +3,22 @@ version: '3'
 services:
   backend:
     image: 'docker-spring-boot-postgres:latest'
+    network_mode: "host"
     build:
       context: .
     container_name: lambdaGrp2
-    ports:
-      - "8080:8080"
     depends_on:
       - db
     environment:
       - SERVER_ADDRESS=0.0.0.0
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/lambda-grp2?reWriteBatchedInserts=true
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/lambda-grp2?reWriteBatchedInserts=true
       - SPRING_DATASOURCE_USERNAME=grp2
       - SPRING_DATASOURCE_PASSWORD=grp2
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
 
   db:
     image: 'postgres:13.1-alpine'
+    network_mode: "host"
     container_name: db
     volumes:
       - pgdata:/var/lib/postgresql/data
