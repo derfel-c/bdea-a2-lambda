@@ -16,9 +16,13 @@ import org.springframework.web.multipart.MultipartFile;
 import java.awt.*;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class FileHandler {
@@ -72,5 +76,20 @@ public class FileHandler {
         wordCloud.build(wordFrequencies);
         wordCloud.writeToFile(root + "/" + fileName + ".png");
         return true;
+    }
+
+    public Set<String> listFiles() throws IOException {
+        try (Stream<Path> stream = Files.list(Paths.get(root))) {
+            return stream
+                    .filter(file -> !Files.isDirectory(file))
+                    .map(Path::getFileName)
+                    .map(Path::toString)
+                    .collect(Collectors.toSet());
+        }
+    }
+
+    public byte[] getTagCloud(String filename) throws IOException {
+        Path img = Paths.get(root + "/" + filename);
+        return Files.readAllBytes(img);
     }
 }

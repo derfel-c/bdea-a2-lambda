@@ -3,20 +3,20 @@ package com.bdea.grp2.lambda.controller;
 import com.bdea.grp2.lambda.service.FileHandler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
+import java.util.Set;
 
-@Controller
+@Slf4j
+@RestController
 @Tag(name = "Frontend API Controller", description = "Offers operations for the frontend")
 public class FrontendController {
     private final FileHandler fileHandler;
@@ -43,5 +43,28 @@ public class FrontendController {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Upload failed: ", e);
         }
 
+    }
+
+    @GetMapping(value = "/listFiles")
+    @Operation(summary = "List all files from the files folder")
+    public Set<String> listFiles() {
+        try {
+            return this.fileHandler.listFiles();
+        } catch (IOException e) {
+            log.error("Failed to list files", e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to list files: " + e.getMessage());
+        }
+    }
+
+    @GetMapping(value = "/getTagCloud/{fileName}",
+            produces = MediaType.IMAGE_PNG_VALUE)
+    @Operation(summary = "Get a tag cloud image")
+    public byte[] getTagCloud(@PathVariable String fileName) {
+        try {
+            return this.fileHandler.getTagCloud(fileName);
+        } catch (IOException e) {
+            log.error("Failed to get tag cloud", e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to get tag cloud: " + e.getMessage());
+        }
     }
 }
