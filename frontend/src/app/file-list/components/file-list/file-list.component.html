@@ -1,0 +1,14 @@
+<ng-container *ngIf="files$ | async as files">
+  <mat-form-field appearance="fill">
+    <mat-label>Select File</mat-label>
+    <mat-select
+      [hideSingleSelectionIndicator]="true"
+      ngModel
+      (ngModelChange)="fileSelected.emit($event)"
+    >
+      <mat-option *ngFor="let file of files" [value]="file">
+        {{ file }}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+</ng-container>
