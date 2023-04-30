@@ -50,7 +50,10 @@ public class FrontendController {
     @Operation(summary = "List all files from the files folder")
     public Set<String> listFiles() {
         try {
-            return this.fileHandler.listTagClouds();
+            Set<String> tagClouds = this.fileHandler.listTagClouds();
+            Set<String> txtFiles = this.fileHandler.listTxtFiles();
+            tagClouds.addAll(txtFiles);
+            return tagClouds;
         } catch (IOException e) {
             log.error("Failed to list files", e);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to list files: " + e.getMessage());
@@ -58,7 +61,7 @@ public class FrontendController {
     }
 
     @GetMapping(value = "/listFiles/txt")
-    @Operation(summary = "List all files from the files folder")
+    @Operation(summary = "List all uploaded .txt files")
     public Set<String> listTxtFiles() {
         try {
             return this.fileHandler.listTxtFiles();
@@ -69,7 +72,7 @@ public class FrontendController {
     }
 
     @GetMapping(value = "/listFiles/tagCloud")
-    @Operation(summary = "List all files from the files folder")
+    @Operation(summary = "List all tag cloud files")
     public Set<String> listTagClouds() {
         try {
             return this.fileHandler.listTagClouds();
