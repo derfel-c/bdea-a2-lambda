@@ -33,8 +33,9 @@ public class FrontendController {
     @Operation(summary = "upload a file and create a tag cloud")
     public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) {
         try {
-            boolean success = fileHandler.createTagCloud(file);
-            if (success) {
+            boolean txtSaveSuccess = fileHandler.saveTextFile(file);
+            boolean createTagCloudSuccess = fileHandler.createTagCloud(file);
+            if (createTagCloudSuccess && txtSaveSuccess) {
                 return new ResponseEntity<>(HttpStatus.OK);
             } else {
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
@@ -49,7 +50,29 @@ public class FrontendController {
     @Operation(summary = "List all files from the files folder")
     public Set<String> listFiles() {
         try {
-            return this.fileHandler.listFiles();
+            return this.fileHandler.listTagClouds();
+        } catch (IOException e) {
+            log.error("Failed to list files", e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to list files: " + e.getMessage());
+        }
+    }
+
+    @GetMapping(value = "/listFiles/txt")
+    @Operation(summary = "List all files from the files folder")
+    public Set<String> listTxtFiles() {
+        try {
+            return this.fileHandler.listTxtFiles();
+        } catch (IOException e) {
+            log.error("Failed to list files", e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to list files: " + e.getMessage());
+        }
+    }
+
+    @GetMapping(value = "/listFiles/tagCloud")
+    @Operation(summary = "List all files from the files folder")
+    public Set<String> listTagClouds() {
+        try {
+            return this.fileHandler.listTagClouds();
         } catch (IOException e) {
             log.error("Failed to list files", e);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to list files: " + e.getMessage());

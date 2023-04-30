@@ -11,6 +11,7 @@ import com.kennycason.kumo.palette.ColorPalette;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.awt.*;
@@ -18,6 +19,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -27,6 +29,8 @@ import java.util.stream.Stream;
 @Service
 public class FileHandler {
     private final String root = "files";
+    private final String tagClouds = "files/tagClouds";
+    private final String txtFiles = "files/txtFiles";
     private final WordRepository wordRepository;
     private final FileRepository fileRepository;
 
@@ -41,9 +45,28 @@ public class FileHandler {
     public void init() {
         try {
             Files.createDirectories(Paths.get(root));
+            Files.createDirectories(Paths.get(tagClouds));
+            Files.createDirectories(Paths.get(txtFiles));
         } catch (IOException e) {
             throw new RuntimeException("Could not initialize folder for upload!");
         }
+    }
+
+    public boolean saveTextFile(MultipartFile file) throws IllegalArgumentException {
+        if (file == null || file.getOriginalFilename() == null) {
+            throw new IllegalArgumentException("Cannot save null file");
+        }
+        String name = StringUtils.cleanPath(file.getOriginalFilename());
+        try {
+            if (name.contains("..")) {
+                throw new IllegalArgumentException("Filename invalid " + name);
+            }
+            Path path = Paths.get(txtFiles).resolve(name);
+            Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Failed to save file: " + name);
+        }
+        return true;
     }
 
     public boolean createTagCloud(MultipartFile file) throws IOException {
@@ -74,12 +97,22 @@ public class FileHandler {
         wordCloud.setColorPalette(new ColorPalette(new Color(0x4055F1), new Color(0x408DF1), new Color(0x40AAF1), new Color(0x40C5F1), new Color(0x40D3F1), new Color(0xFFFFFF)));
         wordCloud.setFontScalar(new SqrtFontScalar(8, 50));
         wordCloud.build(wordFrequencies);
-        wordCloud.writeToFile(root + "/" + fileName + ".png");
+        wordCloud.writeToFile(tagClouds + "/" + fileName + ".png");
         return true;
     }
 
-    public Set<String> listFiles() throws IOException {
-        try (Stream<Path> stream = Files.list(Paths.get(root))) {
+    public Set<String> listTagClouds() throws IOException {
+        try (Stream<Path> stream = Files.list(Paths.get(tagClouds))) {
+            return stream
+                    .filter(file -> !Files.isDirectory(file))
+                    .map(Path::getFileName)
+                    .map(Path::toString)
+                    .collect(Collectors.toSet());
+        }
+    }
+
+    public Set<String> listTxtFiles() throws IOException {
+        try (Stream<Path> stream = Files.list(Paths.get(txtFiles))) {
             return stream
                     .filter(file -> !Files.isDirectory(file))
                     .map(Path::getFileName)
@@ -89,7 +122,7 @@ public class FileHandler {
     }
 
     public byte[] getTagCloud(String filename) throws IOException {
-        Path img = Paths.get(root + "/" + filename);
+        Path img = Paths.get(tagClouds + "/" + filename);
         return Files.readAllBytes(img);
     }
 }
