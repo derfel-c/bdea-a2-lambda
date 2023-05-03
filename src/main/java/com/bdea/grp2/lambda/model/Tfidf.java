@@ -19,5 +19,5 @@ import javax.persistence.Table;
 public class Tfidf {
     @Id
     private String word;
-    private long tfidf;
+    private int tfidf;
 }

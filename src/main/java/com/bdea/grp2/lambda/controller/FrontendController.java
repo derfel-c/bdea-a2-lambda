@@ -5,6 +5,7 @@ import com.bdea.grp2.lambda.service.SparkService;
 import io.swagger.annotations.Api;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.sql.AnalysisException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -38,13 +39,12 @@ public class FrontendController {
         try {
             boolean txtSaveSuccess = fileHandler.saveTextFile(file);
             boolean createTagCloudSuccess = fileHandler.createTagCloud(file);
-            this.sparkService.newFileJob(file);
             if (createTagCloudSuccess && txtSaveSuccess) {
                 return new ResponseEntity<>(HttpStatus.OK);
             } else {
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
-        } catch (IOException e) {
+        } catch (IOException | AnalysisException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Upload failed: ", e);
         }
 

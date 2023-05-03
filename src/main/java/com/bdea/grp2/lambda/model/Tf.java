@@ -19,5 +19,5 @@ import javax.persistence.Table;
 public class Tf {
     @EmbeddedId
     private TermId termId;
-    private long tf;
+    private float tf;
 }

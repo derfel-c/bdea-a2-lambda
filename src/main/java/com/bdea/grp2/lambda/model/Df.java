@@ -19,5 +19,5 @@ import javax.persistence.Table;
 public class Df {
     @Id
     private String term;
-    private long df;
+    private int df;
 }
