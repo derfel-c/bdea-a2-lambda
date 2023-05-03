@@ -1,8 +1,9 @@
 package com.bdea.grp2.lambda.controller;
 
 import com.bdea.grp2.lambda.service.FileHandler;
+import com.bdea.grp2.lambda.service.SparkService;
+import io.swagger.annotations.Api;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -17,13 +18,15 @@ import java.util.Set;
 
 @Slf4j
 @RestController
-@Tag(name = "Frontend API Controller", description = "Offers operations for the frontend")
+@Api(value = "Frontend API Controller")
 public class FrontendController {
     private final FileHandler fileHandler;
+    private final SparkService sparkService;
 
     @Autowired
-    public FrontendController(FileHandler fileHandler) {
+    public FrontendController(FileHandler fileHandler, SparkService sparkService) {
         this.fileHandler = fileHandler;
+        this.sparkService = sparkService;
     }
 
     @RequestMapping(
@@ -31,10 +34,11 @@ public class FrontendController {
             method = RequestMethod.POST,
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "upload a file and create a tag cloud")
-    public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<String> uploadFile(@RequestPart("file") MultipartFile file) {
         try {
             boolean txtSaveSuccess = fileHandler.saveTextFile(file);
             boolean createTagCloudSuccess = fileHandler.createTagCloud(file);
+            this.sparkService.newFileJob(file);
             if (createTagCloudSuccess && txtSaveSuccess) {
                 return new ResponseEntity<>(HttpStatus.OK);
             } else {

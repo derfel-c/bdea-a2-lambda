@@ -1,8 +1,11 @@
 package com.bdea.grp2.lambda.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import jakarta.persistence.*;
 import lombok.*;
+
+import javax.persistence.EmbeddedId;
+import javax.persistence.Entity;
+import javax.persistence.Table;
 
 @Setter
 @ToString
@@ -12,10 +15,9 @@ import lombok.*;
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Entity
-@Table(name = "word", schema = "public", catalog = "lambda-grp2")
-public class Word {
+@Table(name = "tf")
+public class Tf {
     @EmbeddedId
-    private WordId wordId;
+    private TermId termId;
     private long tf;
-    private long df;
 }

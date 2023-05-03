@@ -1,5 +1,6 @@
 package com.bdea.grp2.lambda.service;
 
+import com.bdea.grp2.lambda.configuration.FolderPaths;
 import com.bdea.grp2.lambda.model.*;
 import com.kennycason.kumo.CollisionMode;
 import com.kennycason.kumo.WordCloud;
@@ -8,12 +9,12 @@ import com.kennycason.kumo.bg.CircleBackground;
 import com.kennycason.kumo.font.scale.SqrtFontScalar;
 import com.kennycason.kumo.nlp.FrequencyAnalyzer;
 import com.kennycason.kumo.palette.ColorPalette;
-import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.PostConstruct;
 import java.awt.*;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -28,25 +29,26 @@ import java.util.stream.Stream;
 
 @Service
 public class FileHandler {
-    private final String root = "files";
-    private final String tagClouds = "files/tagClouds";
-    private final String txtFiles = "files/txtFiles";
-    private final WordRepository wordRepository;
+    private final TfRepository tfRepository;
+    private final DfRepository dfRepository;
+    private final TfidfRepository tfidfRepository;
     private final FileRepository fileRepository;
 
 
     @Autowired
-    public FileHandler(WordRepository wordRepository, FileRepository fileRepository) {
-        this.wordRepository = wordRepository;
+    public FileHandler(TfRepository tfRepository, DfRepository dfRepository, TfidfRepository tfidfRepository, FileRepository fileRepository) {
+        this.tfRepository = tfRepository;
         this.fileRepository = fileRepository;
+        this.dfRepository = dfRepository;
+        this.tfidfRepository = tfidfRepository;
     }
 
     @PostConstruct
     public void init() {
         try {
-            Files.createDirectories(Paths.get(root));
-            Files.createDirectories(Paths.get(tagClouds));
-            Files.createDirectories(Paths.get(txtFiles));
+            Files.createDirectories(Paths.get(FolderPaths.ROOT));
+            Files.createDirectories(Paths.get(FolderPaths.TAG_CLOUDS));
+            Files.createDirectories(Paths.get(FolderPaths.TXT_FILES));
         } catch (IOException e) {
             throw new RuntimeException("Could not initialize folder for upload!");
         }
@@ -61,7 +63,7 @@ public class FileHandler {
             if (name.contains("..")) {
                 throw new IllegalArgumentException("Filename invalid " + name);
             }
-            Path path = Paths.get(txtFiles).resolve(name);
+            Path path = Paths.get(FolderPaths.TXT_FILES).resolve(name);
             Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             throw new IllegalArgumentException("Failed to save file: " + name);
@@ -83,12 +85,12 @@ public class FileHandler {
         File fileEntity = File.builder().filename(fileName).wordCount(wordFrequencies.size()).build();
         this.fileRepository.save(fileEntity);
 
-        final List<Word> words = new ArrayList<>();
+        final List<Tf> tfs = new ArrayList<>();
         for (WordFrequency wf : wordFrequencies) {
-            WordId id = WordId.builder().fileName(fileName).word(wf.getWord()).build();
-            words.add(Word.builder().tf(wf.getFrequency()).df(1).wordId(id).build());
+            TermId id = TermId.builder().fileName(fileName).term(wf.getWord()).build();
+            tfs.add(Tf.builder().tf(wf.getFrequency()).termId(id).build());
         }
-        this.wordRepository.saveAll(words);
+        this.tfRepository.saveAll(tfs);
 
         final Dimension dimension = new Dimension(600, 600);
         final WordCloud wordCloud = new WordCloud(dimension, CollisionMode.PIXEL_PERFECT);
@@ -97,12 +99,12 @@ public class FileHandler {
         wordCloud.setColorPalette(new ColorPalette(new Color(0x4055F1), new Color(0x408DF1), new Color(0x40AAF1), new Color(0x40C5F1), new Color(0x40D3F1), new Color(0xFFFFFF)));
         wordCloud.setFontScalar(new SqrtFontScalar(8, 50));
         wordCloud.build(wordFrequencies);
-        wordCloud.writeToFile(tagClouds + "/" + fileName + ".png");
+        wordCloud.writeToFile(FolderPaths.TAG_CLOUDS + "/" + fileName + ".png");
         return true;
     }
 
     public Set<String> listTagClouds() throws IOException {
-        try (Stream<Path> stream = Files.list(Paths.get(tagClouds))) {
+        try (Stream<Path> stream = Files.list(Paths.get(FolderPaths.TAG_CLOUDS))) {
             return stream
                     .filter(file -> !Files.isDirectory(file))
                     .map(Path::getFileName)
@@ -112,7 +114,7 @@ public class FileHandler {
     }
 
     public Set<String> listTxtFiles() throws IOException {
-        try (Stream<Path> stream = Files.list(Paths.get(txtFiles))) {
+        try (Stream<Path> stream = Files.list(Paths.get(FolderPaths.TXT_FILES))) {
             return stream
                     .filter(file -> !Files.isDirectory(file))
                     .map(Path::getFileName)
@@ -122,7 +124,7 @@ public class FileHandler {
     }
 
     public byte[] getTagCloud(String filename) throws IOException {
-        Path img = Paths.get(tagClouds + "/" + filename);
+        Path img = Paths.get(FolderPaths.TAG_CLOUDS + "/" + filename);
         return Files.readAllBytes(img);
     }
 }

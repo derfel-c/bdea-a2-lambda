@@ -15,10 +15,9 @@ import javax.persistence.Table;
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Entity
-@Table(name = "file")
-public class File {
+@Table(name = "tfidf")
+public class Tfidf {
     @Id
-    private String filename;
-    private long wordCount;
-
+    private String word;
+    private long tfidf;
 }

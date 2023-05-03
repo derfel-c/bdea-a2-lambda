@@ -1,12 +1,12 @@
 package com.bdea.grp2.lambda.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import jakarta.persistence.Embeddable;
 import lombok.*;
 
-import java.io.Serializable;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
-@Embeddable
 @Setter
 @ToString
 @Getter
@@ -14,7 +14,10 @@ import java.io.Serializable;
 @NoArgsConstructor
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class WordId implements Serializable {
-    private String word;
-    private String fileName;
+@Entity
+@Table(name = "df")
+public class Df {
+    @Id
+    private String term;
+    private long df;
 }
