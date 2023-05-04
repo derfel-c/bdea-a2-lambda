@@ -3,22 +3,15 @@ package com.bdea.grp2.lambda.service;
 import com.bdea.grp2.lambda.configuration.FolderPaths;
 import com.bdea.grp2.lambda.configuration.WordTokenizer;
 import com.bdea.grp2.lambda.model.*;
-import com.kennycason.kumo.CollisionMode;
-import com.kennycason.kumo.WordCloud;
 import com.kennycason.kumo.WordFrequency;
-import com.kennycason.kumo.bg.CircleBackground;
-import com.kennycason.kumo.font.scale.SqrtFontScalar;
 import com.kennycason.kumo.nlp.FrequencyAnalyzer;
-import com.kennycason.kumo.palette.ColorPalette;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.spark.sql.AnalysisException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.PostConstruct;
-import java.awt.*;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -110,7 +103,7 @@ public class FileHandler {
             this.sparkService.newFileJob(file, tfs);
             return true;
         } catch (Exception e) {
-            log.error("Exception: " , e);
+            log.error("Exception: ", e);
             throw new Exception("New file job failed with error", e);
         }
     }

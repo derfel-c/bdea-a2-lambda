@@ -3,7 +3,10 @@ package com.bdea.grp2.lambda.service;
 import com.bdea.grp2.lambda.model.*;
 import com.kennycason.kumo.WordFrequency;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.spark.sql.*;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Encoders;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SparkSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,7 +16,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-import static org.apache.spark.sql.functions.*;
+import static org.apache.spark.sql.functions.lit;
+import static org.apache.spark.sql.functions.log;
 
 @Slf4j
 @Service
@@ -103,7 +107,7 @@ public class SparkService {
             rows.forEach(r -> wordFrequencies.add(new WordFrequency(r.getTerm(), (int) r.getTfidf())));
             this.tagCloudService.createTagCloud(wordFrequencies, file.getOriginalFilename());
         } catch (Exception e) {
-            log.error("Exception: " , e);
+            log.error("Exception: ", e);
             throw new Exception("Spark job failed with error", e);
         }
     }
