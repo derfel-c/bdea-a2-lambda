@@ -91,18 +91,19 @@ public class SparkService {
 
             // Calculate tf-idf
             Dataset<Row> tfIdf = tfAndDfAndIdf.withColumn("tfidf", tfAndDfAndIdf.col("tf").multiply(tfAndDfAndIdf.col("idf")));
-            tfIdf.show();
+            //tfIdf.show();
             // Multiply to get values > 1 for tag cloud generation
             tfIdf = tfIdf.withColumn("tfidf", tfIdf.col("tfidf").multiply(10000));
             tfIdf = tfIdf.select(tfIdf.col("term"), tfIdf.col("tfidf"));
-            tfIdf.show();
             Dataset<Tfidf> tfIdfTyped = tfIdf.as(Encoders.bean(Tfidf.class));
+            tfIdf.show();
             List<Tfidf> rows = tfIdfTyped.collectAsList();
             // Build tag cloud data
             List<WordFrequency> wordFrequencies = new ArrayList<>();
             rows.forEach(r -> wordFrequencies.add(new WordFrequency(r.getTerm(), (int) r.getTfidf())));
             this.tagCloudService.createTagCloud(wordFrequencies, file.getOriginalFilename());
         } catch (Exception e) {
+            log.error("Exception: " , e);
             throw new Exception("Spark job failed with error", e);
         }
     }

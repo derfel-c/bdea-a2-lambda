@@ -1,6 +1,7 @@
 package com.bdea.grp2.lambda.service;
 
 import com.bdea.grp2.lambda.configuration.FolderPaths;
+import com.bdea.grp2.lambda.configuration.WordTokenizer;
 import com.bdea.grp2.lambda.model.*;
 import com.kennycason.kumo.CollisionMode;
 import com.kennycason.kumo.WordCloud;
@@ -19,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.annotation.PostConstruct;
 import java.awt.*;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -78,7 +80,7 @@ public class FileHandler {
 
     public boolean createTagCloud(MultipartFile file) throws Exception {
         try {
-            String fileContent = new String(file.getBytes());
+            String fileContent = new String(file.getBytes(), StandardCharsets.UTF_8);
             String fileName = file.getOriginalFilename();
             if (fileName == null || fileName.equals("")) {
                 throw new IllegalArgumentException("Cannot handle empty filename");
@@ -90,6 +92,7 @@ public class FileHandler {
             final FrequencyAnalyzer frequencyAnalyzer = new FrequencyAnalyzer();
             frequencyAnalyzer.setWordFrequenciesToReturn(300);
             frequencyAnalyzer.setMinWordLength(4);
+            frequencyAnalyzer.setWordTokenizer(new WordTokenizer());
 
             List<String> texts = new ArrayList<>();
             texts.add(fileContent);
@@ -107,6 +110,7 @@ public class FileHandler {
             this.sparkService.newFileJob(file, tfs);
             return true;
         } catch (Exception e) {
+            log.error("Exception: " , e);
             throw new Exception("New file job failed with error", e);
         }
     }
