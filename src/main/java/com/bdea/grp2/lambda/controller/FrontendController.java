@@ -44,7 +44,7 @@ public class FrontendController {
             } else {
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
-        } catch (IOException | AnalysisException e) {
+        } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Upload failed: ", e);
         }
 

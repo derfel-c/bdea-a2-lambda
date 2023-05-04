@@ -9,6 +9,7 @@ import com.kennycason.kumo.bg.CircleBackground;
 import com.kennycason.kumo.font.scale.SqrtFontScalar;
 import com.kennycason.kumo.nlp.FrequencyAnalyzer;
 import com.kennycason.kumo.palette.ColorPalette;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.AnalysisException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@Slf4j
 @Service
 public class FileHandler {
     private final TfRepository tfRepository;
@@ -74,43 +76,39 @@ public class FileHandler {
         return true;
     }
 
-    public boolean createTagCloud(MultipartFile file) throws IOException, AnalysisException {
-        String fileContent = new String(file.getBytes());
-        String fileName = file.getOriginalFilename();
-        final FrequencyAnalyzer frequencyAnalyzer = new FrequencyAnalyzer();
-        frequencyAnalyzer.setWordFrequenciesToReturn(300);
-        frequencyAnalyzer.setMinWordLength(4);
+    public boolean createTagCloud(MultipartFile file) throws Exception {
+        try {
+            String fileContent = new String(file.getBytes());
+            String fileName = file.getOriginalFilename();
+            if (fileName == null || fileName.equals("")) {
+                throw new IllegalArgumentException("Cannot handle empty filename");
+            }
+            File found = this.fileRepository.findById(fileName).orElse(null);
+            if (found != null) {
+                throw new IOException("File already uploaded");
+            }
+            final FrequencyAnalyzer frequencyAnalyzer = new FrequencyAnalyzer();
+            frequencyAnalyzer.setWordFrequenciesToReturn(300);
+            frequencyAnalyzer.setMinWordLength(4);
 
-        List<String> texts = new ArrayList<>();
-        texts.add(fileContent);
-        final List<WordFrequency> wordFrequencies = frequencyAnalyzer.load(texts);
-        long wordCount = wordFrequencies.stream().map(WordFrequency::getFrequency).reduce(0,Integer::sum);
-        File fileEntity = File.builder().filename(fileName).wordCount(wordCount).build();
-        this.fileRepository.save(fileEntity);
+            List<String> texts = new ArrayList<>();
+            texts.add(fileContent);
+            final List<WordFrequency> wordFrequencies = frequencyAnalyzer.load(texts);
+            long wordCount = wordFrequencies.stream().map(WordFrequency::getFrequency).reduce(0, Integer::sum);
+            File fileEntity = File.builder().filename(fileName).wordCount(wordCount).build();
+            this.fileRepository.save(fileEntity);
 
-        final List<Tf> tfs = new ArrayList<>();
-        for (WordFrequency wf : wordFrequencies) {
-            TermId id = TermId.builder().fileName(fileName).term(wf.getWord()).build();
-            tfs.add(Tf.builder().tf((float) wf.getFrequency() / wordCount).termId(id).build());
+            final List<Tf> tfs = new ArrayList<>();
+            for (WordFrequency wf : wordFrequencies) {
+                TermId id = TermId.builder().fileName(fileName).term(wf.getWord()).build();
+                tfs.add(Tf.builder().tf((float) wf.getFrequency() / wordCount).termId(id).build());
+            }
+            this.tfRepository.saveAll(tfs);
+            this.sparkService.newFileJob(file, tfs);
+            return true;
+        } catch (Exception e) {
+            throw new Exception("New file job failed with error", e);
         }
-        this.tfRepository.saveAll(tfs);
-        this.sparkService.newFileJob(file, tfs);
-        return true;
-//        List<Tfidf> tfidfs = this.sparkService.newFileJob(file, tfs);
-//        wordFrequencies.clear();
-//        for (Tfidf tfidf : tfidfs) {
-//            wordFrequencies.add(new WordFrequency(tfidf.getWord(), tfidf.getTfidf()));
-//        }
-//
-//        final Dimension dimension = new Dimension(600, 600);
-//        final WordCloud wordCloud = new WordCloud(dimension, CollisionMode.PIXEL_PERFECT);
-//        wordCloud.setPadding(2);
-//        wordCloud.setBackground(new CircleBackground(300));
-//        wordCloud.setColorPalette(new ColorPalette(new Color(0x4055F1), new Color(0x408DF1), new Color(0x40AAF1), new Color(0x40C5F1), new Color(0x40D3F1), new Color(0xFFFFFF)));
-//        wordCloud.setFontScalar(new SqrtFontScalar(8, 50));
-//        wordCloud.build(wordFrequencies);
-//        wordCloud.writeToFile(FolderPaths.TAG_CLOUDS + "/" + fileName + ".png");
-//        return true;
     }
 
     public Set<String> listTagClouds() throws IOException {

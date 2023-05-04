@@ -18,6 +18,6 @@ import javax.persistence.Table;
 @Table(name = "tfidf")
 public class Tfidf {
     @Id
-    private String word;
-    private int tfidf;
+    private String term;
+    private double tfidf;
 }
