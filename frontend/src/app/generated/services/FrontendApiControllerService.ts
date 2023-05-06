@@ -26,7 +26,6 @@ formData?: {
 file: Blob;
 },
 ): Observable<string> {
-  console.log('upload', formData)
         return __request(OpenAPI, this.http, {
             method: 'POST',
             url: '/upload',
