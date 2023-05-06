@@ -1,3 +1,5 @@
-<app-dropzone></app-dropzone>
-<app-file-list (fileSelected)="selectedFile = $event"></app-file-list>
-<app-wordcloud [file]="selectedFile"></app-wordcloud>
+<app-dropzone class="dropzone"></app-dropzone>
+<div class="file-view">
+  <app-file-list (fileSelected)="selectedFile$$.next($event)"></app-file-list>
+  <app-wordcloud *ngIf="selectedFile$$ | async as selectedFile" [file]="selectedFile"></app-wordcloud>
+</div>

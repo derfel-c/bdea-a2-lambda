@@ -4,6 +4,7 @@ import { FileListComponent } from './components/file-list/file-list.component';
 import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
 import { FormsModule } from '@angular/forms';
+import { MatTableModule } from '@angular/material/table';
 
 @NgModule({
   exports: [FileListComponent],
@@ -13,6 +14,7 @@ import { FormsModule } from '@angular/forms';
     FormsModule,
     MatSelectModule,
     MatInputModule,
+    MatTableModule,
   ],
 })
 export class FileListModule {}

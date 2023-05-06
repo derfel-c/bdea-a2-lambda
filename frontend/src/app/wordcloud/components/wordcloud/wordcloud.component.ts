@@ -1,7 +1,6 @@
 import { Component, Input } from '@angular/core';
-import { DomSanitizer } from '@angular/platform-browser';
-import { Subject } from 'rxjs';
-import { map, shareReplay, switchMap, tap } from 'rxjs/operators';
+import { BehaviorSubject } from 'rxjs';
+import { map, shareReplay, switchMap } from 'rxjs/operators';
 import { FilesService } from 'src/app/api/services/files.service';
 
 @Component({
@@ -10,7 +9,7 @@ import { FilesService } from 'src/app/api/services/files.service';
   styleUrls: ['./wordcloud.component.scss'],
 })
 export class WordcloudComponent {
-  private _file$$ = new Subject<string>();
+  private _file$$ = new BehaviorSubject<string>('');
   private _wordcloud$$ = this._file$$.pipe(
     switchMap((file: string) =>
       this._filesService.getTagCloud(file).pipe(shareReplay(1))

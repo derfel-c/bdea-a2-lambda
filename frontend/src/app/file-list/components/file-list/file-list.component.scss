@@ -1,0 +1,33 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  width: 430px;
+}
+
+.info-text {
+  font-weight: 500;
+  height: 20px;
+}
+
+.table-wrapper {
+  height: calc(100% - 20px - .5rem);
+  overflow-y: auto;
+}
+
+table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.mat-column-name {
+  width: auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #f5f5f5;
+  }
+}

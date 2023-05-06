@@ -12,8 +12,9 @@ export class FileListComponent {
   @Output() public fileSelected = new EventEmitter<string>();
 
   public files$ = this._filesService.listFilesTagCloud();
+  public filesObj$ = this.files$.pipe(map((files) => files.map((f) => ({ name: f }))));
 
-  public columns = ['name']
+  public columns = ['name'];
 
   constructor(private readonly _filesService: FilesService) {}
 }
