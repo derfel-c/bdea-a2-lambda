@@ -67,6 +67,7 @@ form {
 .control-buttons {
   display: flex;
   flex: 0 0 36px;
+  gap: .5rem;
 
   button {
     flex: 1;

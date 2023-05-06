@@ -58,5 +58,13 @@
         ><mat-spinner color="primary" diameter="18"> </mat-spinner
       ></mat-icon>
     </button>
+    <button
+      class="upload-button"
+      mat-flat-button
+      color="primary"
+      (click)="runBatchJob();$event.preventDefault()"
+    >
+      Run Batch Job
+    </button>
   </div>
 </form>

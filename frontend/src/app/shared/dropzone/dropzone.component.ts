@@ -5,7 +5,12 @@ import {
   ViewChild,
 } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
+import {
+  BehaviorSubject,
+  Observable,
+  catchError,
+  combineLatest
+} from 'rxjs';
 import { FilesService } from 'src/app/api/services/files.service';
 
 @Component({
@@ -24,10 +29,10 @@ export class DropzoneComponent {
   constructor(
     private formBuilder: FormBuilder,
     private readonly _filesService: FilesService,
-    public cd: ChangeDetectorRef,
+    public cd: ChangeDetectorRef
   ) {
     this.uploadForm = this.formBuilder.group({
-      file: ['']
+      file: [''],
     });
   }
 
@@ -39,10 +44,18 @@ export class DropzoneComponent {
     [...files].forEach((file: File) => {
       uploads.push(this._filesService.uploadFile(file));
     });
-    combineLatest(uploads).subscribe(() => {
-      this._loading$$.next(false);
-      this._filesService.updateFileList();
-    });
+    combineLatest(uploads)
+      .pipe(
+        catchError((err) => {
+          console.error(err);
+          this._loading$$.next(false);
+          return err;
+        }),
+      )
+      .subscribe(() => {
+        this._loading$$.next(false);
+        this._filesService.updateFileList();
+      });
     this.fileDropEl.nativeElement.value = '';
   }
 
@@ -51,10 +64,13 @@ export class DropzoneComponent {
     const dt = new DataTransfer();
     const files = this.fileDropEl.nativeElement.files;
     for (let i = 0; i < files.length; i++) {
-      const file = files[i]
-      if (index !== i)
-        dt.items.add(file)
+      const file = files[i];
+      if (index !== i) dt.items.add(file);
     }
-    this.fileDropEl.nativeElement.files = dt.files
+    this.fileDropEl.nativeElement.files = dt.files;
+  }
+
+  public runBatchJob() {
+    console.log('runBatchJob');
   }
 }

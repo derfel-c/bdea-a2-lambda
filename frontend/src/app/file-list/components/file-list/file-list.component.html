@@ -1,13 +1,28 @@
-<span class="info-text">Select a file to view its wordcloud:</span>
+<ng-container *ngIf="filesObj$ | async as files">
+  <ng-container *ngIf="files.length; else noContent">
+    <span class="info-text">Select a file to view its wordcloud:</span>
 
-<div class="table-wrapper" *ngIf="filesObj$ | async as files">
-  <table mat-table [dataSource]="files">
-    <ng-container matColumnDef="name">
-      <th mat-header-cell *matHeaderCellDef> Name </th>
-      <td mat-cell *matCellDef="let element" [title]="element.name" (click)="fileSelected.emit(element.name)"> {{element.name}} </td>
-    </ng-container>
+    <div class="table-wrapper">
+      <table mat-table [dataSource]="files">
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Name</th>
+          <td
+            mat-cell
+            *matCellDef="let element"
+            [title]="element.name"
+            (click)="fileSelected.emit(element.name)"
+          >
+            {{ element.name }}
+          </td>
+        </ng-container>
 
-    <tr mat-header-row *matHeaderRowDef="columns"></tr>
-    <tr mat-row *matRowDef="let row; columns: columns;"></tr>
-  </table>
-</div>
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns"></tr>
+      </table>
+    </div>
+  </ng-container>
+
+  <ng-template #noContent>
+    <span class="info-text">No File Uploaded jet!</span>
+  </ng-template>
+</ng-container>
