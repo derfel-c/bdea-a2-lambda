@@ -7,42 +7,56 @@
   (ngSubmit)="upload()"
   enctype="multipart/form-data"
 >
-<div class="dropzone-wrapper">
-  <div class="dropzone">
-    <input
-      type="file"
-      #fileDropzone
-      id="file-dropzone"
-      formControlName="file"
-      required
-      multiple
-    />
-    <span class="material-symbols-outlined"> upload </span>
-    <div class="center-text">Drag and drop your files here or</div>
-    <button mat-flat-button (click)="fileDropzone.click();$event.preventDefault()">
-      Browse for your files
-    </button>
+  <div class="dropzone-wrapper">
+    <div class="dropzone">
+      <input
+        type="file"
+        #fileDropzone
+        id="file-dropzone"
+        formControlName="file"
+        required
+        multiple
+      />
+      <span class="material-symbols-outlined"> upload </span>
+      <div class="center-text">Drag and drop your files here or</div>
+      <button
+        mat-flat-button
+        (click)="fileDropzone.click(); $event.preventDefault()"
+      >
+        Browse for your files
+      </button>
+    </div>
   </div>
-</div>
   <div class="file-list">
-    <div class="file" *ngFor="let file of array.from(fileDropzone.files || []); let i=index" [title]="file.name">
+    <div
+      class="file"
+      *ngFor="let file of array.from(fileDropzone.files || []); let i = index"
+      [title]="file.name"
+    >
       <mat-icon>insert_drive_file</mat-icon>
       <div class="file-title">{{ file.name }}</div>
-      <button mat-icon-button class="clear-button" (click)="removeFile(i, $event)">
+      <button
+        mat-icon-button
+        class="clear-button"
+        (click)="removeFile(i, $event)"
+      >
         <mat-icon>clear</mat-icon>
       </button>
     </div>
   </div>
   <div class="control-buttons">
     <button
-    class="upload-button"
-    mat-flat-button
-    color="primary"
-    type="submit"
-    [disabled]="!fileDropzone.files?.length"
-  >
-    Upload Files ({{ fileDropzone.files?.length }})
-  </button>
+      class="upload-button"
+      mat-flat-button
+      color="primary"
+      type="submit"
+      [disabled]="!fileDropzone.files?.length || (loading$ | async)"
+    >
+      <span *ngIf="!(loading$ | async)">Upload Files ({{ fileDropzone.files?.length }})</span>
+      <mat-icon
+        *ngIf="loading$ | async"
+        ><mat-spinner color="primary" diameter="18"> </mat-spinner
+      ></mat-icon>
+    </button>
   </div>
-
 </form>

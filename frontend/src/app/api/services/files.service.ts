@@ -1,10 +1,14 @@
 import { Injectable } from '@angular/core';
+import { BehaviorSubject, switchMap } from 'rxjs';
 import { FrontendApiControllerService } from 'src/app/generated';
 
 @Injectable({
   providedIn: 'root'
 })
 export class FilesService {
+
+  private _updateFileList$$ = new BehaviorSubject<void>(undefined);
+
   constructor(private readonly _frontendApiControllerService: FrontendApiControllerService) {}
 
   public uploadFile(file: File) {
@@ -16,7 +20,9 @@ export class FilesService {
   }
 
   public listFilesTagCloud() {
-    return this._frontendApiControllerService.listFilesTagCloud();
+    return this._updateFileList$$.pipe(
+      switchMap(() => this._frontendApiControllerService.listFilesTagCloud())
+    );
   }
 
   public listFilesTxt() {
@@ -25,5 +31,9 @@ export class FilesService {
 
   public getTagCloud(fileName: string) {
     return this._frontendApiControllerService.getTagCloud(fileName);
+  }
+
+  public updateFileList() {
+    this._updateFileList$$.next(undefined);
   }
 }

@@ -28,6 +28,8 @@ form {
   position: relative;
   margin: 0 auto;
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
 
   .material-symbols-outlined {
     font-size: $height;

@@ -5,7 +5,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { Observable, combineLatest } from 'rxjs';
+import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
 import { FilesService } from 'src/app/api/services/files.service';
 
 @Component({
@@ -18,11 +18,13 @@ export class DropzoneComponent {
 
   public array = Array;
   uploadForm: FormGroup;
+  private _loading$$ = new BehaviorSubject<boolean>(false);
+  public loading$ = this._loading$$.asObservable();
 
   constructor(
     private formBuilder: FormBuilder,
     private readonly _filesService: FilesService,
-    public cd: ChangeDetectorRef
+    public cd: ChangeDetectorRef,
   ) {
     this.uploadForm = this.formBuilder.group({
       file: ['']
@@ -31,13 +33,16 @@ export class DropzoneComponent {
 
   public upload() {
     const files = this.fileDropEl.nativeElement.files;
-    console.log(this.fileDropEl.nativeElement.files, [...files]);
+    this._loading$$.next(true);
     if (files.length === 0) return;
     const uploads: Observable<string>[] = [];
     [...files].forEach((file: File) => {
       uploads.push(this._filesService.uploadFile(file));
     });
-    combineLatest(uploads).subscribe();
+    combineLatest(uploads).subscribe(() => {
+      this._loading$$.next(false);
+      this._filesService.updateFileList();
+    });
     this.fileDropEl.nativeElement.value = '';
   }
 
