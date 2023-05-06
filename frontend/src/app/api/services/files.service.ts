@@ -15,6 +15,14 @@ export class FilesService {
     return this._frontendApiControllerService.listFiles();
   }
 
+  public listFilesTagCloud() {
+    return this._frontendApiControllerService.listFilesTagCloud();
+  }
+
+  public listFilesTxt() {
+    return this._frontendApiControllerService.listFilesTxt();
+  }
+
   public getTagCloud(fileName: string) {
     return this._frontendApiControllerService.getTagCloud(fileName);
   }

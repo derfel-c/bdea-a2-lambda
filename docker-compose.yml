@@ -3,7 +3,6 @@ version: '3'
 services:
   backend:
     image: 'docker-spring-boot-postgres:latest'
-    network_mode: "host"
     build:
       context: .
     container_name: lambdaGrp2
@@ -18,7 +17,6 @@ services:
 
   db:
     image: 'postgres:13.1-alpine'
-    network_mode: "host"
     container_name: db
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -26,5 +24,7 @@ services:
       - POSTGRES_USER=grp2
       - POSTGRES_PASSWORD=grp2
       - POSTGRES_DB=lambda-grp2
+    ports:
+      - "5432:5432"
 volumes:
   pgdata:

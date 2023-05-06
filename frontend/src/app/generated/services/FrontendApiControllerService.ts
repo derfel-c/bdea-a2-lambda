@@ -47,6 +47,20 @@ file: Blob;
         });
     }
 
+    public listFilesTagCloud(): Observable<Array<string>> {
+        return __request(OpenAPI, this.http, {
+            method: 'GET',
+            url: '/listFiles/tagCloud',
+        });
+    }
+
+    public listFilesTxt(): Observable<Array<string>> {
+        return __request(OpenAPI, this.http, {
+            method: 'GET',
+            url: '/listFiles/txt',
+        });
+    }
+
     /**
      * Get a tag cloud image
      * @param fileName

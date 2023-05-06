@@ -3,20 +3,34 @@
   flex-direction: column;
   align-items: center;
   gap: 1rem;
+  height: 172px;
+}
+
+form {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  width: 430px;
+}
+
+.dropzone-wrapper {
+  display: flex;
+  align-items: flex-end;
+  flex: 1;
 }
 
 .dropzone {
-  width: 450px;
-  height: 200px;
-  padding: 2rem;
-  text-align: center;
-  border: dashed 1px black;
+  $height: 36px;
+  display: flex;
+  height: $height;
+  line-height: $height;
+  border: solid 1px black;
   position: relative;
   margin: 0 auto;
-  color: #38424c;
+  font-weight: 500;
 
   .material-symbols-outlined {
-    font-size: 100px;
+    font-size: $height;
   }
 
   input {
@@ -30,13 +44,16 @@
     cursor: pointer;
   }
 
-  label {
-    color: white;
-    width: 183px;
-    height: 44px;
-    border-radius: 21.5px;
-    background-color: #db202f;
-    padding: 8px 16px;
+  .center-text {
+    flex: 1;
+    padding: 0 .5rem;
+  }
+
+  button {
+    height: $height;
+    border-radius: 0;
+    padding: 0 .5rem;
+    z-index: 3;
   }
 
   h3 {
@@ -45,6 +62,49 @@
   }
 }
 
-.upload-button {
-  width: 300px;
+.control-buttons {
+  display: flex;
+  flex: 0 0 36px;
+
+  button {
+    flex: 1;
+    border-radius: 0;
+  }
+
+  .upload-button {
+    width: 300px;
+  }
+}
+
+.file-list {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+  max-height: 100px;
+  overflow-y: auto;
+  border: 1px solid #cdd2d8;
+
+  .file {
+    display: flex;
+    height: 24px;
+    padding: 5px 0 5px 6px;
+    font-weight: 500;
+
+    .file-title {
+      text-align: left;
+      flex: 1;
+      line-height: 24px;
+      padding-left: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .clear-button {
+    background-color: #cdd2d8;
+    min-width: 36px;
+    transform: scale(0.5) translateY(-50%);
+    z-index: 3;
+  }
 }

@@ -11,7 +11,7 @@ export class FileListComponent {
 
   @Output() public fileSelected = new EventEmitter<string>();
 
-  public files$ = this._filesService.listFiles();
+  public files$ = this._filesService.listFilesTagCloud();
 
   public columns = ['name']
 
