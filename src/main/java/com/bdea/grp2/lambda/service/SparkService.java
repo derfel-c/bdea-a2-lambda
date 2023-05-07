@@ -2,6 +2,7 @@ package com.bdea.grp2.lambda.service;
 
 import com.bdea.grp2.lambda.model.Df;
 import com.bdea.grp2.lambda.model.DfRepository;
+import com.bdea.grp2.lambda.model.TermId;
 import com.bdea.grp2.lambda.model.Tf;
 import com.bdea.grp2.lambda.model.Tfidf;
 import com.kennycason.kumo.WordFrequency;
@@ -130,48 +131,45 @@ public class SparkService implements Serializable {
             JavaRDD<File> filesRdd = javaSparkContext.parallelize(files, files.size());
 
             TfService tfService = this.tfService;
-            JavaPairRDD<String, List<Tf>> termFrequenciesByFileList = filesRdd
-                    .flatMapToPair(file -> {
-                        byte[] content = Files.readAllBytes(file.toPath());
-                        List<Tf> tfs = tfService.extractTfsFromFile(content, file.getName());
-                        List<Tuple2<String, List<Tf>>> tuples = new ArrayList<>();
-                        tuples.add(new Tuple2<>(file.getName(), tfs));
-                        return tuples.iterator();
-                    });
-            JavaRDD<Tuple3<String, String, Integer>> termFrequenciesFlat = filesRdd
+            JavaRDD<Tf> termFrequenciesFlat = filesRdd
                     .flatMap(file -> {
                         byte[] content = Files.readAllBytes(file.toPath());
                         List<Tf> tfs = tfService.extractTfsFromFile(content, file.getName());
-                        List<Tuple3<String, String, Integer>> result = new ArrayList<>();
+                        List<Tf> result = new ArrayList<>();
                         for (Tf tf : tfs) {
-                            result.add(new Tuple3<>(tf.getTermId().getTerm(), tf.getTermId().getFileName(), tf.getTermCount()));
+                            result.add(tf);
                         }
                         log.info("Finished file {} analysis", file.getName());
                         return result.iterator();
                     });
 
-            // calc df
-            Map<String, Long> df = termFrequenciesFlat.mapToPair(tuple -> new Tuple2<>(tuple._1(), tuple._3())).countByKey();
-            List<Df> dfObjects = df.entrySet().stream().map(k -> Df.builder().term(k.getKey()).df(Math.toIntExact(k.getValue())).build())
-                    .collect(Collectors.toList());
-            this.dfRepository.saveAll(dfObjects);
-            log.info("Finished DF calc");
-
-            JavaPairRDD<String, List<Tf>> combinedTfsByFile = termFrequenciesByFileList.reduceByKey((l1, l2) -> {
+            JavaPairRDD<String, List<Tf>> termFrequenciesByFileList = termFrequenciesFlat.mapToPair(tf -> {
+                List<Tf> tfList = new ArrayList<>();
+                tfList.add(tf);
+                return new Tuple2<>(tf.getTermId().getFileName(), tfList);
+            }).reduceByKey((l1, l2) -> {
                 List<Tf> combined = new ArrayList<>();
                 combined.addAll(l1);
                 combined.addAll(l2);
                 return combined;
             });
-            List<Tuple2<String, List<Tf>>> collectedTfsByFile = combinedTfsByFile.collect();
+
+            // calc df
+            JavaPairRDD<String, Integer> termTermCount = termFrequenciesFlat.mapToPair(tf -> new Tuple2<>(tf.getTermId().getTerm(), tf.getTermCount()));
+            Map<String, Long> df = termTermCount.countByKey();
+            List<Df> dfObjects = df.entrySet().stream().map(k -> Df.builder().term(k.getKey()).df(Math.toIntExact(k.getValue())).build())
+                    .collect(Collectors.toList());
+            this.dfRepository.saveAll(dfObjects);
+            log.info("Finished DF calc");
+
+            List<Tuple2<String, List<Tf>>> collectedTfsByFile = termFrequenciesByFileList.collect();
             for (Tuple2<String, List<Tf>> tfs : collectedTfsByFile) {
                 this.newFileJob(tfs._1(), tfs._2());
             }
 
             // Global tag cloud calculation
-            int globalWordCount = termFrequenciesFlat.map(tuple -> tuple._3()).reduce(Integer::sum);
-            JavaPairRDD<String, Float> globalTfSum = termFrequenciesFlat
-                    .mapToPair(tuple -> new Tuple2<>(tuple._1(), tuple._3()))
+            int globalWordCount = termFrequenciesFlat.map(tf -> tf.getTermCount()).reduce(Integer::sum);
+            JavaPairRDD<String, Float> globalTfSum = termTermCount
                     .reduceByKey(Integer::sum)
                     .mapToPair(tuple -> new Tuple2<>(tuple._1, ((float) tuple._2 / (float) globalWordCount) / (float) df.get(tuple._1)));
             log.info("Finished global tag cloud calc");
