@@ -8,7 +8,7 @@ import javax.persistence.Entity;
 import javax.persistence.Table;
 import java.io.Serializable;
 
-@Setter
+@Setter()
 @ToString
 @Getter
 @AllArgsConstructor
@@ -21,4 +21,5 @@ public class Tf implements Serializable {
     @EmbeddedId
     private TermId termId;
     private float tf;
+    private int termCount;
 }

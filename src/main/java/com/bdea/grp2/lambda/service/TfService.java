@@ -5,7 +5,6 @@ import com.bdea.grp2.lambda.model.TermId;
 import com.bdea.grp2.lambda.model.Tf;
 import com.kennycason.kumo.WordFrequency;
 import com.kennycason.kumo.nlp.FrequencyAnalyzer;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
@@ -13,7 +12,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-@Slf4j
 @Service
 public class TfService implements Serializable {
 
@@ -33,7 +31,7 @@ public class TfService implements Serializable {
         final List<Tf> tfs = new ArrayList<>();
         for (WordFrequency wf : wordFrequencies) {
             TermId id = TermId.builder().fileName(fileName).term(wf.getWord()).build();
-            tfs.add(Tf.builder().tf((float) wf.getFrequency() / wordCount).termId(id).build());
+            tfs.add(Tf.builder().tf((float) wf.getFrequency() / wordCount).termId(id).termCount(wf.getFrequency()).build());
         }
 
         return tfs;

@@ -138,23 +138,25 @@ public class SparkService implements Serializable {
                         tuples.add(new Tuple2<>(file.getName(), tfs));
                         return tuples.iterator();
                     });
-            JavaRDD<Tuple3<String, String, Float>> termFrequenciesFlat = filesRdd
+            JavaRDD<Tuple3<String, String, Integer>> termFrequenciesFlat = filesRdd
                     .flatMap(file -> {
                         byte[] content = Files.readAllBytes(file.toPath());
                         List<Tf> tfs = tfService.extractTfsFromFile(content, file.getName());
-                        List<Tuple3<String, String, Float>> result = new ArrayList<>();
+                        List<Tuple3<String, String, Integer>> result = new ArrayList<>();
                         for (Tf tf : tfs) {
-                            result.add(new Tuple3<>(tf.getTermId().getTerm(), tf.getTermId().getFileName(), tf.getTf()));
+                            result.add(new Tuple3<>(tf.getTermId().getTerm(), tf.getTermId().getFileName(), tf.getTermCount()));
                         }
                         log.info("Finished file {} analysis", file.getName());
                         return result.iterator();
                     });
+
             // calc df
             Map<String, Long> df = termFrequenciesFlat.mapToPair(tuple -> new Tuple2<>(tuple._1(), tuple._3())).countByKey();
             List<Df> dfObjects = df.entrySet().stream().map(k -> Df.builder().term(k.getKey()).df(Math.toIntExact(k.getValue())).build())
                     .collect(Collectors.toList());
             this.dfRepository.saveAll(dfObjects);
             log.info("Finished DF calc");
+
             JavaPairRDD<String, List<Tf>> combinedTfsByFile = termFrequenciesByFileList.reduceByKey((l1, l2) -> {
                 List<Tf> combined = new ArrayList<>();
                 combined.addAll(l1);
@@ -165,12 +167,15 @@ public class SparkService implements Serializable {
             for (Tuple2<String, List<Tf>> tfs : collectedTfsByFile) {
                 this.newFileJob(tfs._1(), tfs._2());
             }
+
             // Global tag cloud calculation
+            int globalWordCount = termFrequenciesFlat.map(tuple -> tuple._3()).reduce(Integer::sum);
             JavaPairRDD<String, Float> globalTfSum = termFrequenciesFlat
                     .mapToPair(tuple -> new Tuple2<>(tuple._1(), tuple._3()))
-                    .reduceByKey(Float::sum)
-                    .mapToPair(tuple -> new Tuple2<>(tuple._1, tuple._2 / (float) df.get(tuple._1)));
+                    .reduceByKey(Integer::sum)
+                    .mapToPair(tuple -> new Tuple2<>(tuple._1, ((float) tuple._2 / (float) globalWordCount) / (float) df.get(tuple._1)));
             log.info("Finished global tag cloud calc");
+
             // Create the global tag cloud
             List<Tuple2<String, Float>> globalWordFrequenciesList = globalTfSum.collect();
             List<WordFrequency> globalWordFrequencies = new ArrayList<>();
@@ -182,21 +187,5 @@ public class SparkService implements Serializable {
             log.error("Exception: ", e);
             throw new Exception("Spark job failed with error", e);
         }
-    }
-
-    private void createGlobalTagCloud() {
-        // Vorhandenen tfidf-Werte aus der Datenbank lesen
-        Dataset<Row> globalTfIdf = sparkSession.read().jdbc("jdbc:postgresql://localhost:5432/lambda-grp2",
-                "public.tfidf", this.connectionProperties);
-
-        // Globale TF-Summe für jeden Begriff berechnen
-        Dataset<Row> globalTfSum = globalTfIdf.groupBy(globalTfIdf.col("term")).sum("tfidf")
-                .withColumnRenamed("sum(tfidf)", "tfidf_sum");
-
-        // Globale Tag-Cloud erstellen
-        Dataset<WordFrequency> globalWordFrequencies = globalTfSum.map(
-                (MapFunction<Row, WordFrequency>) row -> new WordFrequency(row.getString(0), (int) row.getDouble(1)), Encoders.bean(WordFrequency.class));
-        List<WordFrequency> globalWordFrequenciesList = globalWordFrequencies.collectAsList();
-        this.tagCloudService.createTagCloud(globalWordFrequenciesList, "global_tag_cloud");
     }
 }
