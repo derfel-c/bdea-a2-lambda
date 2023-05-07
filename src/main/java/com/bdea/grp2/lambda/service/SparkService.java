@@ -33,6 +33,7 @@ import org.apache.spark.api.java.function.PairFlatMapFunction;
 import scala.Tuple2;
 
 import java.util.Iterator;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -68,6 +69,7 @@ public class SparkService {
         connectionProperties.put("driver", "org.postgresql.Driver");
         connectionProperties.put("user", "grp2");
         connectionProperties.put("password", "grp2");
+        this.sparkSession.sparkContext().setLogLevel("ERROR");
     }
 
     @PreDestroy
@@ -96,11 +98,11 @@ public class SparkService {
             // Create view for df calculation
             tf.createOrReplaceTempView("dfCalc");
 
-            Dataset<Row> dfCalc = this.sparkSession.sql("SELECT term, SUM(df) as df FROM dfCalc GROUP BY term");
+            Dataset<Row> dfCalc = this.sparkSession.sql("SELECT term, MAX(df) as df FROM dfCalc GROUP BY term");
             dfCalc.show();
 
             // Write new df to db
-            dfCalc.write().mode("overwrite").option("truncate", "true").option("encoding", "UTF-8").jdbc("jdbc:postgresql://localhost:5432/lambda-grp2", "public.df", this.connectionProperties);
+            //dfCalc.write().mode("overwrite").option("truncate", "true").option("encoding", "UTF-8").jdbc("jdbc:postgresql://localhost:5432/lambda-grp2", "public.df", this.connectionProperties);
             this.sparkSession.catalog().dropTempView("dfCalc");
             // Create new view with updated data
             dfCalc.createOrReplaceTempView("df");
@@ -158,7 +160,10 @@ public class SparkService {
                     });
             // calc df
             Map<String, Long> df = termFrequencies.mapToPair(tuple -> new Tuple2<>(tuple._1, tuple._2._2)).countByKey();
-    
+            List<Df> dfObjects = df.entrySet().stream().map(k-> Df.builder().term(k.getKey()).df(Math.toIntExact(k.getValue())).build())
+                    .collect(Collectors.toList());
+            this.dfRepository.saveAll(dfObjects);
+
             // Global tag cloud calculation
             JavaPairRDD<String, Float> globalTfSum = termFrequencies
                     .mapToPair(tuple -> new Tuple2<>(tuple._1, tuple._2._2))

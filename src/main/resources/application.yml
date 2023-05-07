@@ -10,6 +10,7 @@ logging:
     root: INFO
     com:
       velocity.lab: DEBUG
+      kennycason.kumo: ERROR
 
 
 spring:
