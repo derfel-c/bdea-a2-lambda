@@ -6,6 +6,7 @@ import lombok.*;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.Table;
+import java.io.Serializable;
 
 @Setter
 @ToString
@@ -16,7 +17,7 @@ import javax.persistence.Table;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Entity
 @Table(name = "tf")
-public class Tf {
+public class Tf implements Serializable {
     @EmbeddedId
     private TermId termId;
     private float tf;
