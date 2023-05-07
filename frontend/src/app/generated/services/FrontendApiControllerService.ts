@@ -60,6 +60,13 @@ file: Blob;
         });
     }
 
+    public runBatch(): Observable<string> {
+        return __request(OpenAPI, this.http, {
+            method: 'GET',
+            url: '/runBatch',
+        });
+    }
+
     /**
      * Get a tag cloud image
      * @param fileName

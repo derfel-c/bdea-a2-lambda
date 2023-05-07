@@ -50,11 +50,12 @@
       mat-flat-button
       color="primary"
       type="submit"
-      [disabled]="!fileDropzone.files?.length || (loading$ | async)"
+      [disabled]="!fileDropzone.files?.length || (loadingUpload$ | async)"
     >
-      <span *ngIf="!(loading$ | async)">Upload Files ({{ fileDropzone.files?.length }})</span>
-      <mat-icon
-        *ngIf="loading$ | async"
+      <span *ngIf="!(loadingUpload$ | async)"
+        >Upload Files ({{ fileDropzone.files?.length }})</span
+      >
+      <mat-icon *ngIf="loadingUpload$ | async"
         ><mat-spinner color="primary" diameter="18"> </mat-spinner
       ></mat-icon>
     </button>
@@ -62,9 +63,14 @@
       class="upload-button"
       mat-flat-button
       color="primary"
-      (click)="runBatchJob();$event.preventDefault()"
+      (click)="runBatchJob(); $event.preventDefault()"
+      [disabled]="loadingBatch$ | async"
     >
-      Run Batch Job
+      <span *ngIf="!(loadingBatch$ | async)">Run Batch Job</span>
+
+      <mat-icon *ngIf="loadingBatch$ | async"
+        ><mat-spinner color="primary" diameter="18"> </mat-spinner
+      ></mat-icon>
     </button>
   </div>
 </form>

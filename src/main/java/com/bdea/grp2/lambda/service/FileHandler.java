@@ -32,15 +32,17 @@ public class FileHandler {
     private final TfidfRepository tfidfRepository;
     private final FileRepository fileRepository;
     private final SparkService sparkService;
+    private final TfService tfService;
 
 
     @Autowired
-    public FileHandler(TfRepository tfRepository, DfRepository dfRepository, TfidfRepository tfidfRepository, FileRepository fileRepository, SparkService sparkService) {
+    public FileHandler(TfRepository tfRepository, DfRepository dfRepository, TfidfRepository tfidfRepository, FileRepository fileRepository, SparkService sparkService, TfService tfService) {
         this.tfRepository = tfRepository;
         this.fileRepository = fileRepository;
         this.dfRepository = dfRepository;
         this.tfidfRepository = tfidfRepository;
         this.sparkService = sparkService;
+        this.tfService = tfService;
     }
 
     @PostConstruct
@@ -100,9 +102,13 @@ public class FileHandler {
                 tfs.add(Tf.builder().tf((float) wf.getFrequency() / wordCount).termId(id).build());
             }
             this.tfRepository.saveAll(tfs);
-            this.sparkService.newFileJob(file, tfs);
+            // calculate TF-IDF using spark
+            this.sparkService.newFileJob(fileName, tfs);
             return true;
         } catch (Exception e) {
+            if (e instanceof IOException) {
+                throw e;
+            }
             log.error("Exception: ", e);
             throw new Exception("New file job failed with error", e);
         }
@@ -131,5 +137,14 @@ public class FileHandler {
     public byte[] getTagCloud(String filename) throws IOException {
         Path img = Paths.get(FolderPaths.TAG_CLOUDS + "/" + filename);
         return Files.readAllBytes(img);
+    }
+
+    public List<java.io.File> getTxtFiles() throws IOException {
+        try (Stream<Path> stream = Files.list(Paths.get(FolderPaths.TXT_FILES))) {
+            return stream
+                    .filter(file -> !Files.isDirectory(file))
+                    .map(Path::toFile)
+                    .collect(Collectors.toList());
+        }
     }
 }

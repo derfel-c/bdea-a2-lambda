@@ -1,16 +1,11 @@
 import {
-  ChangeDetectorRef,
   Component,
   ElementRef,
-  ViewChild,
+  ViewChild
 } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import {
-  BehaviorSubject,
-  Observable,
-  catchError,
-  combineLatest
-} from 'rxjs';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { BehaviorSubject, Observable, catchError, combineLatest } from 'rxjs';
 import { FilesService } from 'src/app/api/services/files.service';
 
 @Component({
@@ -23,13 +18,15 @@ export class DropzoneComponent {
 
   public array = Array;
   uploadForm: FormGroup;
-  private _loading$$ = new BehaviorSubject<boolean>(false);
-  public loading$ = this._loading$$.asObservable();
+  private _loadingUpload$$ = new BehaviorSubject<boolean>(false);
+  public loadingUpload$ = this._loadingUpload$$.asObservable();
+  private _loadingBatch$$ = new BehaviorSubject<boolean>(false);
+  public loadingBatch$ = this._loadingBatch$$.asObservable();
 
   constructor(
     private formBuilder: FormBuilder,
     private readonly _filesService: FilesService,
-    public cd: ChangeDetectorRef
+    private _snackBar: MatSnackBar
   ) {
     this.uploadForm = this.formBuilder.group({
       file: [''],
@@ -38,7 +35,7 @@ export class DropzoneComponent {
 
   public upload() {
     const files = this.fileDropEl.nativeElement.files;
-    this._loading$$.next(true);
+    this._loadingUpload$$.next(true);
     if (files.length === 0) return;
     const uploads: Observable<string>[] = [];
     [...files].forEach((file: File) => {
@@ -47,13 +44,13 @@ export class DropzoneComponent {
     combineLatest(uploads)
       .pipe(
         catchError((err) => {
-          console.error(err);
-          this._loading$$.next(false);
-          return err;
-        }),
+          this.showError(err.body.message.split(';')[0]);
+          return '';
+        })
       )
-      .subscribe(() => {
-        this._loading$$.next(false);
+      .subscribe((x) => {
+        console.log(x);
+        this._loadingUpload$$.next(false);
         this._filesService.updateFileList();
       });
     this.fileDropEl.nativeElement.value = '';
@@ -71,6 +68,26 @@ export class DropzoneComponent {
   }
 
   public runBatchJob() {
-    console.log('runBatchJob');
+    this._loadingBatch$$.next(true);
+    this._filesService
+      .runBatch()
+      .pipe(
+        catchError((err) => {
+          this.showError(err.body.message);
+          return '';
+        })
+      )
+      .subscribe(() => {
+        this._loadingBatch$$.next(false);
+        this._filesService.updateFileList();
+      });
+  }
+
+  private showError(error: string) {
+    this._snackBar.open(error, 'Close', {
+      horizontalPosition: 'right',
+      verticalPosition: 'top',
+      duration: 5000,
+    });
   }
 }

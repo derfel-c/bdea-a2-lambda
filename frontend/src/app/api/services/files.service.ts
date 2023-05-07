@@ -36,4 +36,8 @@ export class FilesService {
   public updateFileList() {
     this._updateFileList$$.next(undefined);
   }
+
+  public runBatch() {
+    return this._frontendApiControllerService.runBatch();
+  }
 }

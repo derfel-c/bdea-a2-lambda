@@ -10,10 +10,11 @@ import com.kennycason.kumo.palette.ColorPalette;
 import org.springframework.stereotype.Service;
 
 import java.awt.*;
+import java.io.Serializable;
 import java.util.List;
 
 @Service
-public class TagCloudService {
+public class TagCloudService implements Serializable {
 
     public void createTagCloud(List<WordFrequency> wordFrequencies, String fileName) {
         final Dimension dimension = new Dimension(600, 600);

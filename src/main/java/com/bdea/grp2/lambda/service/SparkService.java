@@ -7,17 +7,32 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
+import java.io.File;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import static org.apache.spark.sql.functions.lit;
 import static org.apache.spark.sql.functions.log;
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.MapFunction;
+import org.apache.spark.api.java.function.PairFlatMapFunction;
+import scala.Tuple2;
+
+import java.util.Iterator;
 
 @Slf4j
 @Service
@@ -29,17 +44,20 @@ public class SparkService {
     private final FileRepository fileRepository;
 
     private final TagCloudService tagCloudService;
+    private final TfService tfService;
 
     private SparkSession sparkSession;
     private Properties connectionProperties;
 
     @Autowired
-    public SparkService(TfRepository tfRepository, DfRepository dfRepository, TfidfRepository tfidfRepository, FileRepository fileRepository, TagCloudService tagCloudService) {
+    public SparkService(TfRepository tfRepository, DfRepository dfRepository, TfidfRepository tfidfRepository,
+            FileRepository fileRepository, TagCloudService tagCloudService, TfService tfService) {
         this.tfRepository = tfRepository;
         this.fileRepository = fileRepository;
         this.dfRepository = dfRepository;
         this.tfidfRepository = tfidfRepository;
         this.tagCloudService = tagCloudService;
+        this.tfService = tfService;
     }
 
     @PostConstruct
@@ -52,7 +70,12 @@ public class SparkService {
         connectionProperties.put("password", "grp2");
     }
 
-    public void newFileJob(MultipartFile file, List<Tf> tfs) throws Exception {
+    @PreDestroy
+    private void destroySparkSession() {
+        this.sparkSession.close();
+    }
+
+    public void newFileJob(String fileName, List<Tf> tfs) throws Exception {
         try {
             Dataset<Row> dfData = sparkSession.read().jdbc("jdbc:postgresql://localhost:5432/lambda-grp2", "public.df", this.connectionProperties)
                     .cache(); // VERY IMPORTANT OTHERWISE DATA CANNOT BE WRITTEN FULLY
@@ -105,10 +128,69 @@ public class SparkService {
             // Build tag cloud data
             List<WordFrequency> wordFrequencies = new ArrayList<>();
             rows.forEach(r -> wordFrequencies.add(new WordFrequency(r.getTerm(), (int) r.getTfidf())));
-            this.tagCloudService.createTagCloud(wordFrequencies, file.getOriginalFilename());
+            this.tagCloudService.createTagCloud(wordFrequencies, fileName);
         } catch (Exception e) {
             log.error("Exception: ", e);
             throw new Exception("Spark job failed with error", e);
         }
+    }
+
+    public boolean runBatchJob(List<File> files) throws Exception {
+        try {
+            // Process all files in the list (with Spark RDD)
+            JavaSparkContext javaSparkContext = JavaSparkContext.fromSparkContext(sparkSession.sparkContext());
+            JavaRDD<File> filesRdd = javaSparkContext.parallelize(files, files.size());
+
+            TfService tfService = this.tfService;
+    
+            JavaPairRDD<String, Tuple2<String, Float>> termFrequencies = filesRdd
+                    .flatMapToPair(file -> {
+                        byte[] content = Files.readAllBytes(file.toPath());
+                        List<Tf> tfs = tfService.extractTfsFromFile(content, file.getName());
+                        // recreate the wordcloud for this file
+                        // this.newFileJob(file.getName(), tfs);
+                        List<Tuple2<String, Tuple2<String, Float>>> result = new ArrayList<>();
+                        for (Tf tf : tfs) {
+                            result.add(new Tuple2<>(tf.getTermId().getTerm(),
+                                    new Tuple2<>(tf.getTermId().getFileName(), tf.getTf())));
+                        }
+                        return result.iterator();
+                    });
+            // calc df
+            Map<String, Long> df = termFrequencies.mapToPair(tuple -> new Tuple2<>(tuple._1, tuple._2._2)).countByKey();
+    
+            // Global tag cloud calculation
+            JavaPairRDD<String, Float> globalTfSum = termFrequencies
+                    .mapToPair(tuple -> new Tuple2<>(tuple._1, tuple._2._2))
+                    .reduceByKey(Float::sum)
+                    .mapToPair(tuple -> new Tuple2<>(tuple._1, tuple._2 / (float) df.get(tuple._1)));
+    
+            // Create the global tag cloud
+            List<Tuple2<String, Float>> globalWordFrequenciesList = globalTfSum.collect();
+            List<WordFrequency> globalWordFrequencies = new ArrayList<>();
+            globalWordFrequenciesList.forEach(tuple -> globalWordFrequencies.add(new WordFrequency(tuple._1, Math.round(tuple._2 * 10000))));
+            this.tagCloudService.createTagCloud(globalWordFrequencies, "global_tag_cloud");
+    
+            return true;
+        } catch (Exception e) {
+            log.error("Exception: ", e);
+            throw new Exception("Spark job failed with error", e);
+        }
+    }    
+
+    private void createGlobalTagCloud() {
+        // Vorhandenen tfidf-Werte aus der Datenbank lesen
+        Dataset<Row> globalTfIdf = sparkSession.read().jdbc("jdbc:postgresql://localhost:5432/lambda-grp2",
+                "public.tfidf", this.connectionProperties);
+
+        // Globale TF-Summe für jeden Begriff berechnen
+        Dataset<Row> globalTfSum = globalTfIdf.groupBy(globalTfIdf.col("term")).sum("tfidf")
+                .withColumnRenamed("sum(tfidf)", "tfidf_sum");
+
+        // Globale Tag-Cloud erstellen
+        Dataset<WordFrequency> globalWordFrequencies = globalTfSum.map(
+            (MapFunction<Row,WordFrequency>)row -> new WordFrequency(row.getString(0), (int) row.getDouble(1)), Encoders.bean(WordFrequency.class));
+        List<WordFrequency> globalWordFrequenciesList = globalWordFrequencies.collectAsList();
+        this.tagCloudService.createTagCloud(globalWordFrequenciesList, "global_tag_cloud");
     }
 }

@@ -44,7 +44,8 @@ public class FrontendController {
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Upload failed: ", e);
+            System.out.println(e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Upload failed: " + e.getMessage(), e);
         }
 
     }
@@ -94,6 +95,21 @@ public class FrontendController {
         } catch (IOException e) {
             log.error("Failed to get tag cloud", e);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to get tag cloud: " + e.getMessage());
+        }
+    }
+
+    @GetMapping(path = "/runBatch")
+    @Operation(summary = "triggers a spark batch job")
+    public ResponseEntity<String> runBatch() {
+        try {
+            boolean batchJobSuccess = this.sparkService.runBatchJob(this.fileHandler.getTxtFiles());
+            if (batchJobSuccess) {
+                return new ResponseEntity<>(HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Running batch failed: ", e);
         }
     }
 }
