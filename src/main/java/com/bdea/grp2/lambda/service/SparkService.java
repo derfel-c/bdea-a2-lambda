@@ -135,12 +135,8 @@ public class SparkService implements Serializable {
                     .flatMap(file -> {
                         byte[] content = Files.readAllBytes(file.toPath());
                         List<Tf> tfs = tfService.extractTfsFromFile(content, file.getName());
-                        List<Tf> result = new ArrayList<>();
-                        for (Tf tf : tfs) {
-                            result.add(tf);
-                        }
                         log.info("Finished file {} analysis", file.getName());
-                        return result.iterator();
+                        return tfs.iterator();
                     });
 
             JavaPairRDD<String, List<Tf>> termFrequenciesByFileList = termFrequenciesFlat.mapToPair(tf -> {
