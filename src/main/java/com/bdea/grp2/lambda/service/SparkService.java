@@ -129,7 +129,7 @@ public class SparkService implements Serializable {
             JavaRDD<Tf> termFrequenciesFlat = filesRdd
                     .flatMap(file -> {
                         byte[] content = Files.readAllBytes(file.toPath());
-                        List<Tf> tfs = tfService.extractTfsFromFile(content, file.getName());
+                        List<Tf> tfs = tagCloudService.extractTfsFromFile(content, file.getName());
                         log.info("Finished file {} analysis", file.getName());
                         return tfs.iterator();
                     });
