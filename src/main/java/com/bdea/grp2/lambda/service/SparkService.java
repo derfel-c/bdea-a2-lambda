@@ -2,7 +2,6 @@ package com.bdea.grp2.lambda.service;
 
 import com.bdea.grp2.lambda.model.Df;
 import com.bdea.grp2.lambda.model.DfRepository;
-import com.bdea.grp2.lambda.model.TermId;
 import com.bdea.grp2.lambda.model.Tf;
 import com.bdea.grp2.lambda.model.Tfidf;
 import com.kennycason.kumo.WordFrequency;
@@ -10,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.MapFunction;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.Row;
@@ -18,7 +16,6 @@ import org.apache.spark.sql.SparkSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import scala.Tuple2;
-import scala.Tuple3;
 
 import javax.annotation.PreDestroy;
 import java.io.File;
@@ -40,16 +37,14 @@ public class SparkService implements Serializable {
     private transient final DfRepository dfRepository;
 
     private transient final TagCloudService tagCloudService;
-    private transient final TfService tfService;
 
     private final SparkSession sparkSession;
     private final Properties connectionProperties;
 
     @Autowired
-    public SparkService(DfRepository dfRepository, TagCloudService tagCloudService, TfService tfService) {
+    public SparkService(DfRepository dfRepository, TagCloudService tagCloudService) {
         this.dfRepository = dfRepository;
         this.tagCloudService = tagCloudService;
-        this.tfService = tfService;
 
         this.sparkSession = SparkSession.builder()
                 .appName("lambda-session").master("local[*]").getOrCreate();
@@ -130,7 +125,7 @@ public class SparkService implements Serializable {
             JavaSparkContext javaSparkContext = JavaSparkContext.fromSparkContext(sparkSession.sparkContext());
             JavaRDD<File> filesRdd = javaSparkContext.parallelize(files, files.size());
 
-            TfService tfService = this.tfService;
+            TagCloudService tagCloudService = this.tagCloudService;
             JavaRDD<Tf> termFrequenciesFlat = filesRdd
                     .flatMap(file -> {
                         byte[] content = Files.readAllBytes(file.toPath());
@@ -164,7 +159,7 @@ public class SparkService implements Serializable {
             }
 
             // Global tag cloud calculation
-            int globalWordCount = termFrequenciesFlat.map(tf -> tf.getTermCount()).reduce(Integer::sum);
+            int globalWordCount = termFrequenciesFlat.map(Tf::getTermCount).reduce(Integer::sum);
             JavaPairRDD<String, Float> globalTfSum = termTermCount
                     .reduceByKey(Integer::sum)
                     .mapToPair(tuple -> new Tuple2<>(tuple._1, ((float) tuple._2 / (float) globalWordCount) / (float) df.get(tuple._1)));

@@ -28,21 +28,15 @@ import java.util.stream.Stream;
 @Service
 public class FileHandler {
     private final TfRepository tfRepository;
-    private final DfRepository dfRepository;
-    private final TfidfRepository tfidfRepository;
     private final FileRepository fileRepository;
     private final SparkService sparkService;
-    private final TfService tfService;
 
 
     @Autowired
-    public FileHandler(TfRepository tfRepository, DfRepository dfRepository, TfidfRepository tfidfRepository, FileRepository fileRepository, SparkService sparkService, TfService tfService) {
+    public FileHandler(TfRepository tfRepository, FileRepository fileRepository, SparkService sparkService) {
         this.tfRepository = tfRepository;
         this.fileRepository = fileRepository;
-        this.dfRepository = dfRepository;
-        this.tfidfRepository = tfidfRepository;
         this.sparkService = sparkService;
-        this.tfService = tfService;
     }
 
     @PostConstruct
